@@ -22,12 +22,15 @@
 #include "usblib/usbhid.h"
 #include "usblib/device/usbdevice.h"
 #include "usblib/device/usbdhid.h"
+#include "usblib/device/usbddfu-rt.h"
+#include "usblib/device/usbdcomp.h"
 
 // application
 #include "uart.h"
 #include "board.h"
 #include "diagnostic.h"
-#include "hid.h"
+#include "compositehid.h"
+#include "hiddfu_descriptors.h"
 
 extern databuffer_t rxdata;
 extern databuffer_t txdata;
@@ -87,12 +90,25 @@ int main(void) {
     // Print welcome message
     UARTprintf("Configuring USB\n");
 
-    // Set the USB stack mode to Device mode with VBUS monitoring.
-    USBStackModeSet(0, eUSBModeForceDevice, 0);
+    //------------------------------------------------------
+//    // Set the USB stack mode to Device mode with VBUS monitoring.
+//    USBStackModeSet(0, eUSBModeForceDevice, 0);
+//
+//    // Pass our device information to the USB library and place the device
+//    // on the bus.
+//    USBDHIDInit(0, &hiddatapipe_device);
 
-    // Pass our device information to the USB library and place the device
-    // on the bus.
-    USBDHIDInit(0, &hiddatapipe_device);
+    //------------------------------------------------------
+
+    USBStackModeSet(0, eUSBModeForceDevice, 0);
+    USBDHIDCompositeInit(0, &hiddatapipe_device, &(composite_device.psDevices[0]));
+	USBDDFUCompositeInit(0, &dfu_device, &(composite_device.psDevices[1]));
+
+	//
+	// Pass the USB library our device information, initialize the USB
+	// controller and connect the device to the bus.
+	//
+	USBDCompositeInit(0, &composite_device, DESCRIPTOR_BUFFER_SIZE, composite_descriptorbuffer);
 
     // Block until connected
     while (!usbstate.connected)
